@@ -1,0 +1,54 @@
+{
+    "name": "@artisansdk/workbench",
+    "version": "0.1.0",
+    "author": "Joseph Raub <joseph@raubstudios.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/artisansdk/workbench.git"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "files": [
+        "index.ts",
+        "src"
+    ],
+    "scripts": {
+        "check:types": "tsc --noEmit",
+        "fix": "biome check --fix && fallow fix"
+    },
+    "module": "index.ts",
+    "type": "module",
+    "exports": {
+        ".": "./index.ts",
+        "./react": "./src/React/index.ts",
+        "./react/style.css": "./src/React/style.css"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "2.5.11",
+        "@types/bun": "latest",
+        "@types/react": "^19",
+        "@types/react-dom": "^19",
+        "fallow": "^2.67.0"
+    },
+    "peerDependencies": {
+        "typescript": "^5",
+        "react": "^19",
+        "react-dom": "^19",
+        "valtio": "^2",
+        "@artisansdk/architect": "^0.7.2"
+    },
+    "peerDependenciesMeta": {
+        "@artisansdk/architect": {
+            "optional": true
+        }
+    },
+    "dependencies": {
+        "@raubjo/tooltip": "0.1.0",
+        "react-hot-toast": "^2.6.0",
+        "react-resizable-panels": "^4.12.2",
+        "tinykeys": "^4.0.0",
+        "vaul": "^1.1.2"
+    }
+}

@@ -1,0 +1,25 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="720" rx="28" fill="#F7F4EC"/>
+  <rect x="40" y="40" width="1120" height="640" rx="24" fill="#FFFDF8" stroke="#D8D0C2" stroke-width="2"/>
+  <rect x="72" y="72" width="92" height="576" rx="18" fill="#1F3A5F"/>
+  <text x="118" y="346" fill="#FFFDF8" font-family="Arial, sans-serif" font-size="28" font-weight="700" text-anchor="middle" transform="rotate(-90 118 346)">Icon bar</text>
+  <text x="118" y="392" fill="#C9D7EA" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" transform="rotate(-90 118 392)">Activity items</text>
+  <rect x="188" y="72" width="236" height="576" rx="18" fill="#DDE7F5" stroke="#A8BEDD" stroke-width="2"/>
+  <text x="306" y="114" fill="#1B3552" font-family="Arial, sans-serif" font-size="28" font-weight="700" text-anchor="middle">Primary sidebar</text>
+  <text x="306" y="142" fill="#4A6485" font-family="Arial, sans-serif" font-size="18" text-anchor="middle">Tools</text>
+  <rect x="448" y="72" width="504" height="576" rx="18" fill="#FFF7D6" stroke="#E1CA62" stroke-width="2"/>
+  <text x="700" y="114" fill="#594200" font-family="Arial, sans-serif" font-size="30" font-weight="700" text-anchor="middle">Screen host</text>
+  <text x="700" y="144" fill="#816700" font-family="Arial, sans-serif" font-size="18" text-anchor="middle">Main content</text>
+  <rect x="976" y="72" width="148" height="576" rx="18" fill="#FCE4D8" stroke="#E2B29B" stroke-width="2"/>
+  <text x="1050" y="304" fill="#6A3423" font-family="Arial, sans-serif" font-size="26" font-weight="700" text-anchor="middle" transform="rotate(-90 1050 304)">Secondary sidebar</text>
+  <text x="1050" y="350" fill="#93513C" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" transform="rotate(-90 1050 350)">Tools</text>
+  <rect x="532" y="204" width="336" height="220" rx="20" fill="#FFFFFF" stroke="#2B2B2B" stroke-width="3"/>
+  <rect x="532" y="204" width="336" height="44" rx="20" fill="#2B2B2B"/>
+  <rect x="532" y="228" width="336" height="20" fill="#2B2B2B"/>
+  <text x="700" y="234" fill="#FFFDF8" font-family="Arial, sans-serif" font-size="20" font-weight="700" text-anchor="middle">Modal host</text>
+  <text x="700" y="322" fill="#2B2B2B" font-family="Arial, sans-serif" font-size="22" font-weight="700" text-anchor="middle">Overlay modal</text>
+  <text x="700" y="352" fill="#5A5A5A" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">Rendered above the shell when a modal is active</text>
+  <path d="M188 676C188 676 280 692 424 692C567 692 700 692 700 692" stroke="#7A889B" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 10"/>
+  <path d="M952 676C952 676 858 692 700 692" stroke="#7A889B" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 10"/>
+  <text x="570" y="708" fill="#4D5968" font-family="Arial, sans-serif" font-size="16" text-anchor="middle">`workbench.primarySide` flips the primary sidebar to the opposite side</text>
+</svg>

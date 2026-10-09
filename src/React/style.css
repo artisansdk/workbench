@@ -1,0 +1,713 @@
+/*
+ * Default skin for @raubjo/workbench's react components. Every rule targets a
+ * `.wb-*` class or `data-*` attribute the components already emit, so
+ * overriding any part of it in your own stylesheet (or swapping the
+ * component that renders it via the `components` prop) is enough — nothing
+ * here needs the cascade layer/specificity of !important tricks.
+ */
+
+@import "@raubjo/tooltip/style.css";
+
+.wb-shell {
+    --wb-icon-bar-width: 48px;
+    --wb-classic-icon-bar-width: 200px;
+    --wb-border-color: rgba(127, 127, 127, 0.25);
+    --wb-active-bg: rgba(127, 127, 127, 0.2);
+    --wb-focus-color: currentColor;
+    --wb-handle-hover-color: #1e90ff;
+    --wb-active-indicator-color: currentColor;
+    --wb-modal-backdrop-color: rgba(0, 0, 0, 0.5);
+    --wb-modal-bg: #1e1e1e;
+    --wb-modal-min-width: 320px;
+    --wb-modal-max-width: 90vw;
+    --wb-modal-min-height: 120px;
+    --wb-modal-max-height: 85vh;
+    /* A strong ease-out: quick to respond, gentle to settle. Exits are
+       shorter than entrances — leaving shouldn't keep anyone waiting. */
+    --wb-modal-ease: cubic-bezier(0.23, 1, 0.32, 1);
+    --wb-modal-enter-duration: 200ms;
+    --wb-modal-exit-duration: 150ms;
+    --wb-drawer-bg: var(--wb-modal-bg);
+    --wb-drawer-max-height: 85vh;
+    --wb-status-bar-bg: var(--wb-modal-bg);
+    --wb-status-bar-min-height: 1.5rem;
+
+    position: relative;
+    display: flex;
+    height: 100%;
+    min-height: 0;
+}
+
+.wb-icon-bar {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    width: var(--wb-icon-bar-width);
+    padding: 0.5rem 0;
+}
+
+.wb-shell[data-primary-side="left"] {
+    border-right: 1px solid var(--wb-border-color);
+}
+
+.wb-shell[data-primary-side="right"] {
+    border-left: 1px solid var(--wb-border-color);
+}
+
+.wb-icon-bar-spacer {
+    flex: 1 1 auto;
+}
+
+.wb-shell[data-variant="classic"] .wb-icon-bar {
+    align-items: stretch;
+    width: var(--wb-classic-icon-bar-width);
+    padding-inline: 0.5rem;
+}
+
+.wb-icon-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border: none;
+    border-radius: 0.375rem;
+    background: transparent;
+    cursor: pointer;
+}
+
+.wb-icon-button[data-active] {
+    background: var(--wb-active-bg);
+}
+
+.wb-icon-button > * {
+    pointer-events: none;
+}
+
+.wb-icon-button-label {
+    display: none;
+}
+
+.wb-shell[data-variant="classic"] .wb-icon-button {
+    justify-content: flex-start;
+    gap: 0.75rem;
+    width: 100%;
+    padding-inline: 0.625rem;
+}
+
+.wb-shell[data-variant="classic"] .wb-icon-button-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.wb-panel-group {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+}
+
+/* react-resizable-panels applies className to a nested div (to keep its own
+   flex-basis/flex-grow styling on the outer Panel root uncontested), so this
+   only needs to fill that box — sizing/collapsing is the library's job now. */
+.wb-sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: visible;
+}
+
+.wb-sidebar-handle {
+    width: 4px;
+    cursor: col-resize;
+    background: var(--wb-border-color);
+    transition: background-color 250ms;
+}
+
+.wb-sidebar-handle:hover,
+.wb-sidebar-handle:active {
+    background: var(--wb-handle-hover-color);
+}
+
+.wb-tool-pane {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.wb-tool-pane-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    opacity: 0.75;
+}
+
+.wb-tool-pane-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    padding: 0 0.75rem 0.75rem;
+}
+
+.wb-screen-host {
+    height: 100%;
+    min-width: 0;
+    overflow: auto;
+}
+
+.wb-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: var(--wb-modal-backdrop-color);
+    z-index: 1000;
+    animation: wb-modal-fade var(--wb-modal-enter-duration) var(--wb-modal-ease);
+}
+
+/* Grows from slightly smaller rather than from nothing: a modal that scales
+   up from 0 reads as coming from a point, not appearing in place. */
+.wb-modal-backdrop > .wb-modal {
+    animation: wb-modal-enter var(--wb-modal-enter-duration) var(--wb-modal-ease);
+}
+
+.wb-modal-backdrop[data-closing] {
+    animation: wb-modal-fade-out var(--wb-modal-exit-duration) var(--wb-modal-ease) forwards;
+    pointer-events: none;
+}
+
+.wb-modal-backdrop[data-closing] > .wb-modal {
+    animation: wb-modal-exit var(--wb-modal-exit-duration) var(--wb-modal-ease) forwards;
+}
+
+@keyframes wb-modal-fade {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes wb-modal-enter {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Separate from the entrances rather than them reversed: reversing would
+   also flip the curve, making the exit ease in. */
+@keyframes wb-modal-fade-out {
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes wb-modal-exit {
+    to {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+}
+
+/* Fade only. Kept as an animation rather than none, so the exit's
+   animationend still arrives to unmount the modal. */
+@media (prefers-reduced-motion: reduce) {
+    .wb-modal-backdrop > .wb-modal {
+        animation-name: wb-modal-fade;
+    }
+
+    .wb-modal-backdrop[data-closing] > .wb-modal {
+        animation-name: wb-modal-fade-out;
+    }
+}
+
+.wb-modal {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: fit-content;
+    height: fit-content;
+    min-width: min(var(--wb-modal-min-width), var(--wb-modal-max-width));
+    max-width: var(--wb-modal-max-width);
+    min-height: var(--wb-modal-min-height);
+    /* 100% is the backdrop's padded box, so the modal never outgrows the
+       space the backdrop leaves it — on mobile, the area above the nav. */
+    max-height: min(var(--wb-modal-max-height), 100%);
+    overflow: hidden;
+    background: var(--wb-modal-bg);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+
+/* The body scrolls, not the modal, so the close button stays put. */
+.wb-modal-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* Above the content, which renders after it. */
+.wb-modal-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 1;
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+/* Modal content usually sets a fixed desktop width (w-96 etc.); cap it to the
+   modal so narrow screens shrink it instead of scrolling it sideways. */
+.wb-modal-body > * {
+    max-width: 100%;
+}
+
+.wb-drawer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--wb-modal-backdrop-color);
+}
+
+.wb-drawer {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1001;
+    max-height: var(--wb-drawer-max-height);
+    overflow: auto;
+    padding: 0.5rem 1rem 1rem;
+    /* --wb-sheet-radius rounds the top of every bottom sheet. Read with a
+       fallback rather than set on .wb-shell, because sheets portal out of
+       the shell; set it on :root (0 for square sheets). */
+    border-radius: var(--wb-sheet-radius, 0.75rem) var(--wb-sheet-radius, 0.75rem) 0 0;
+    outline: none;
+    background: var(--wb-drawer-bg);
+}
+
+/* A modal shown as a sheet (Modal.sheet, mobile shell). Its overlay matches
+   the bottom nav's z-index and comes later in the DOM, so it dims the nav and
+   the sheet covers it. */
+.wb-modal-sheet-overlay {
+    z-index: 1001;
+}
+
+.wb-modal-sheet {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+/* A sidebar's tool as a sheet (mobile shell): the pane brings its own
+   padding, and its body scrolls rather than the whole sheet. */
+.wb-sidebar-sheet {
+    display: flex;
+    flex-direction: column;
+    height: var(--wb-drawer-max-height);
+    padding-inline: 0;
+    overflow: hidden;
+}
+
+.wb-sidebar-sheet .wb-drawer-handle {
+    flex: 0 0 auto;
+}
+
+.wb-drawer-handle {
+    margin-bottom: 0.5rem;
+}
+
+.wb-drawer-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* The bar is absolute so it spans the shell regardless of which side the icon
+   bar is on — which means the shell has to reserve its height, or the bottom
+   of the panel area sits underneath it. Only when one is actually rendered:
+   the status bar can be switched off entirely. */
+.wb-shell:has(> .wb-status-bar) {
+    padding-bottom: var(--wb-status-bar-min-height);
+}
+
+.wb-status-bar {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 10;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto) minmax(0, 1fr);
+    align-items: center;
+    min-height: var(--wb-status-bar-min-height);
+    border-top: 1px solid var(--wb-border-color);
+    background: var(--wb-status-bar-bg);
+}
+
+.wb-status-bar-section {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    width: fit-content;
+    min-width: 0;
+}
+
+.wb-status-bar-left {
+    justify-self: start;
+}
+
+.wb-status-bar-center {
+    justify-self: center;
+}
+
+.wb-status-bar-right {
+    justify-self: end;
+}
+
+.wb-status-bar-item {
+    min-width: 0;
+}
+
+.wb-command-palette {
+    display: flex;
+    flex-direction: column;
+    width: 32rem;
+    max-width: 100%;
+}
+
+.wb-command-palette-input {
+    padding: 0.75rem;
+    border: none;
+    border-bottom: 1px solid var(--wb-border-color);
+    background: transparent;
+    color: inherit;
+    font-size: 0.95rem;
+    outline: none;
+}
+
+.wb-command-palette-list {
+    overflow-y: auto;
+    max-height: 320px;
+}
+
+.wb-command-palette-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+}
+
+.wb-command-palette-item[data-selected] {
+    background: var(--wb-active-bg);
+}
+
+.wb-command-palette-empty {
+    padding: 0.75rem;
+    opacity: 0.6;
+    font-size: 0.85rem;
+}
+
+/* Mobile layout: content on top, the top-placement activities as a bottom
+   nav, and the bottom-placement ones behind the header's menu button. */
+.wb-shell[data-layout="mobile"] {
+    --wb-bottom-nav-row-height: 3.5rem;
+    --wb-bottom-nav-height: calc(var(--wb-bottom-nav-row-height) + env(safe-area-inset-bottom));
+    --wb-mobile-icon-size: 1.5rem;
+
+    flex-direction: column;
+}
+
+/* Collapses to nothing while hidden, rather than sliding over the screen, so
+   the screen's own scroll position never has to account for it. The top safe
+   area stays padded either way — that's the status bar's, not the header's. */
+.wb-mobile-header {
+    display: grid;
+    flex: 0 0 auto;
+    grid-template-rows: 1fr;
+    padding-top: env(safe-area-inset-top);
+    transition: grid-template-rows 250ms ease-out;
+}
+
+.wb-mobile-header[data-hidden] {
+    grid-template-rows: 0fr;
+}
+
+/* A grid so the menu button only claims the top-right cell: the screen's
+   first row sits beside it and any further rows run the full width beneath.
+   Each child of <ScreenHeader> is one row. */
+.wb-mobile-header-bar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.25rem 0.5rem 0.5rem;
+}
+
+.wb-mobile-header[data-hidden] .wb-mobile-header-bar {
+    padding-block: 0;
+}
+
+/* Lays out nothing itself: its children (the screen's rows) are the grid's items. */
+.wb-screen-header {
+    display: contents;
+}
+
+.wb-screen-header > * {
+    grid-column: 1 / -1;
+    min-width: 0;
+}
+
+.wb-screen-header > :first-child {
+    grid-column: 1;
+}
+
+.wb-mobile-header-menu {
+    grid-row: 1;
+    grid-column: 2;
+}
+
+.wb-shell[data-layout="mobile"] .wb-panel-group {
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* The screen area is the box its fixed-position content measures from, not
+   the window: something a screen pins to bottom: 0 lands on the nav bar's
+   edge rather than behind it, without knowing the nav exists. On the group
+   rather than the screen host, which can scroll — and a fixed element there
+   would scroll away with the content. */
+.wb-shell[data-layout="mobile"] .wb-panel-group {
+    contain: layout;
+}
+
+/* The nav sits above the backdrop, so stop the backdrop at its edge and keep
+   the modal centered in what's left instead of tucked underneath it. */
+.wb-shell[data-layout="mobile"] .wb-modal-backdrop {
+    bottom: var(--wb-bottom-nav-height);
+    padding-top: calc(1rem + env(safe-area-inset-top));
+}
+
+.wb-bottom-nav-slot {
+    position: relative;
+    flex: 0 0 auto;
+    height: var(--wb-bottom-nav-height);
+}
+
+/* Anchored to the bottom and as tall as its contents; collapsed, it's pushed
+   down so only the bar's own height shows, and expanding slides it up. */
+.wb-bottom-nav {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1001;
+    border-top: 1px solid var(--wb-border-color);
+    background: var(--wb-status-bar-bg);
+    transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.wb-bottom-nav:not([data-expanded]) {
+    transform: translateY(calc(100% - var(--wb-bottom-nav-height)));
+}
+
+.wb-bottom-nav-body {
+    padding: 0 0.25rem env(safe-area-inset-bottom);
+}
+
+.wb-bottom-nav-row {
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    align-items: center;
+    height: var(--wb-bottom-nav-row-height);
+}
+
+/* Same five columns as the row above (four items plus Tools), so they line
+   up. Faded out while collapsed, when only a sliver of it would peek in. */
+.wb-bottom-nav-extra {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    row-gap: 0.75rem;
+    padding: 0.75rem 0 0.75rem;
+    transition: opacity 0.3s;
+}
+
+.wb-bottom-nav:not([data-expanded]) .wb-bottom-nav-extra {
+    opacity: 0;
+}
+
+/* The Tools icon's plus turns into an x while the nav is expanded. */
+.wb-bottom-nav-plus {
+    transform-box: fill-box;
+    transform-origin: center;
+    transition: rotate 200ms ease-out;
+}
+
+.wb-icon-button[aria-expanded="true"] .wb-bottom-nav-plus {
+    rotate: 45deg;
+}
+
+.wb-bottom-nav .wb-icon-button {
+    flex-direction: column;
+    gap: 0.125rem;
+    width: auto;
+    height: auto;
+    padding: 0.25rem;
+}
+
+/* Mobile buttons size to their content, so an icon with no intrinsic size
+   (an svg with only a viewBox) would otherwise stretch to fill the cell. */
+.wb-shell[data-layout="mobile"] .wb-icon-button > svg {
+    flex: 0 0 auto;
+    width: var(--wb-mobile-icon-size);
+    height: var(--wb-mobile-icon-size);
+}
+
+/* The cell is wider than its content, so the active state is a short line
+   under the item rather than a fill across the whole button. */
+.wb-bottom-nav .wb-icon-button {
+    position: relative;
+}
+
+.wb-bottom-nav .wb-icon-button[data-active] {
+    background: transparent;
+}
+
+.wb-bottom-nav .wb-icon-button[data-active]::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    width: 1.5rem;
+    height: 2px;
+    border-radius: 1px;
+    background: var(--wb-active-indicator-color);
+    transform: translateX(-50%);
+}
+
+.wb-bottom-nav .wb-icon-button-label {
+    display: block;
+    overflow: hidden;
+    max-width: 100%;
+    font-size: 0.7rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Only a portal target for the drawer; it shouldn't box the menu button. */
+.wb-app-menu-host {
+    display: contents;
+}
+
+/* Over everything else in the shell, the bottom nav's drawer (1001) included.
+   1002 is left free for an app's toasts to sit between the two. */
+.wb-app-menu-overlay {
+    z-index: 1003;
+}
+
+/* A vaul drawer off the right edge, the side the menu button sits on. Vaul
+   supplies the slide; this only pins it to that edge, above the overlay. */
+.wb-app-menu {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1004;
+    /* One spacing step for the drawer's edges, each row's inset and the
+       icon-to-label gap, so everything lines up on the same grid. */
+    --wb-app-menu-space: 0.75rem;
+
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    width: max-content;
+    min-width: 15rem;
+    max-width: 85vw;
+    padding: calc(var(--wb-app-menu-space) + env(safe-area-inset-top)) var(--wb-app-menu-space)
+        calc(var(--wb-app-menu-space) + env(safe-area-inset-bottom));
+    border-left: 1px solid var(--wb-border-color);
+    outline: none;
+    background: var(--wb-drawer-bg);
+    box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Rows a full touch target tall. */
+.wb-app-menu .wb-icon-button {
+    justify-content: flex-start;
+    gap: var(--wb-app-menu-space);
+    width: 100%;
+    height: 2.75rem;
+    padding-inline: var(--wb-app-menu-space);
+}
+
+/* A fixed-width slot for whatever the icon is (an svg, an avatar), so every
+   label starts at the same x. */
+.wb-app-menu .wb-icon-button > :not(.wb-icon-button-label) {
+    display: flex;
+    flex: 0 0 var(--wb-mobile-icon-size);
+    justify-content: center;
+}
+
+.wb-app-menu .wb-app-menu-close {
+    align-self: flex-end;
+    width: 2.75rem;
+    padding: 0;
+    justify-content: center;
+}
+
+.wb-app-menu .wb-icon-button-label {
+    display: block;
+}
+
+/* The default notice, for apps that don't register their own Toast. */
+.wb-toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
+    border: 1px solid var(--wb-border-color);
+    border-radius: 0.375rem;
+    background: var(--wb-modal-bg);
+    font-size: 0.875rem;
+}
+
+.wb-toast-message {
+    flex: 1 1 auto;
+}
+
+.wb-toast-action {
+    flex: 0 0 auto;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+}
+
+/* Notices leave sideways, the way they came from the corner on desktop. */
+@keyframes wb-toast-exit {
+    to {
+        transform: translateX(calc(100% + 16px));
+        opacity: 0;
+    }
+}

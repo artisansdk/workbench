@@ -1,0 +1,9 @@
+{
+    "ignorePatterns": ["coverage/**", "**/*.test.ts", "**/*.test.tsx", "docs/theme/**"],
+    "usedClassMembers": [
+        {
+            "extends": "Plugin",
+            "members": ["register", "boot"]
+        }
+    ]
+}

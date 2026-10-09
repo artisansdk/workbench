@@ -1,0 +1,16 @@
+[book]
+title = "Workbench"
+authors = ["Joseph Raub"]
+language = "en"
+
+[output.html]
+theme = "theme"
+default-theme = "light"
+preferred-dark-theme = "light"
+additional-css = ["theme/custom.css"]
+additional-js = ["theme/artisan-copy-icon.js"]
+git-repository-url = "https://github.com/artisansdk/workbench"
+git-repository-icon = "fab-github"
+
+[output.html.print]
+enable = false
