@@ -30,7 +30,8 @@
         "@types/bun": "latest",
         "@types/react": "^19",
         "@types/react-dom": "^19",
-        "fallow": "^2.67.0"
+        "fallow": "^2.67.0",
+        "happy-dom": "15.11.7"
     },
     "peerDependencies": {
         "typescript": "^5",

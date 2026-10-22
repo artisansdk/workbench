@@ -86,7 +86,7 @@ Dispatches through the underlying `Bus`.
 
 ## Mutable public state
 
-The `Workbench` instance exposes a few plain mutable fields:
+The `Workbench` instance exposes reactive mutable fields:
 
 - `activeScreenId`
 - `activeModalId`
@@ -94,39 +94,22 @@ The `Workbench` instance exposes a few plain mutable fields:
 - `statusBarVisible`
 - `focusedTool`
 - `primarySide`
+- `toastInset`
 - `keybindings` — the user's keybindings over the registered ones: a hotkey id maps to replacement keys (a hotkey can be moved, never switched off), and `command:<id>` binds keys to a command. Not persisted by the workbench; the app stores it and assigns it back.
 
-The React integration expects the shared `Workbench` instance to participate in your app's rerender strategy, because the class mutates its own public state.
-
-A minimal strategy: subscribe to the wildcard event (`"*"`) and force a rerender on every dispatch with `useSyncExternalStore`.
+`new Workbench()` returns a Valtio proxy. Direct assignments and methods such as `openModal()` and `closeModal()` update the same observable state. Each React component subscribes to the properties it reads through `useWorkbench()`.
 
 ```tsx
-import { useRef, useSyncExternalStore } from "react"
 import { useWorkbench } from "@artisansdk/workbench/react"
 
-function useWorkbenchVersion() {
-    const workbench = useWorkbench()
-    const version = useRef(0)
-
-    return useSyncExternalStore(
-        (onStoreChange) =>
-            workbench.events.listen("*", () => {
-                version.current++
-                onStoreChange()
-            }),
-        () => version.current,
-    )
-}
-
 function ActiveScreenLabel() {
-    useWorkbenchVersion() // rerenders this component on any Workbench event
     const workbench = useWorkbench()
 
     return <span>{workbench.activeScreenId ?? "none"}</span>
 }
 ```
 
-Call `useWorkbenchVersion()` anywhere reading mutable Workbench state (`activeScreenId`, `activeModalId`, `focusedTool`, etc.) that needs to stay in sync with dispatched events.
+This component subscribes to `activeScreenId`; opening a modal alone does not trigger its subscription. Nested reads such as `workbench.focusedTool.primary` are tracked too. The event bus remains a stable reference and is separate from state subscriptions: direct state changes do not need to dispatch an event.
 
 ## Error behavior
 

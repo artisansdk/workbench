@@ -1,5 +1,6 @@
 import { createElement, type ReactNode } from "react"
 import hotToast from "react-hot-toast"
+import { proxy, ref } from "valtio"
 import { createEventBus, type EventBus, type EventClass, type EventIdentifier, type Listener } from "./EventBus"
 import SideBarClose from "./Events/SideBarClose"
 import SideBarOpen from "./Events/SideBarOpen"
@@ -84,7 +85,7 @@ export class Workbench {
     keybindings: Record<string, string> = {}
 
     constructor(events: EventBus = createEventBus()) {
-        this.events = events
+        this.events = ref(events)
 
         // Built into the package, not app-contributed — registered directly
         // (bypassing the plugin gate) so they're always discoverable via
@@ -92,6 +93,9 @@ export class Workbench {
         this.eventRegistry.register(SideBarOpen, "$workbench:core")
         this.eventRegistry.register(SideBarClose, "$workbench:core")
         this.eventRegistry.register(SideBarToggle, "$workbench:core")
+
+        // Own reactivity so callers can mutate this instance without wrapping it.
+        return proxy(this)
     }
 
     use(plugin: Plugin, origin: PluginOrigin = "first-party"): this {

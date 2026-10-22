@@ -64,9 +64,33 @@ Choose the shell presentation and number of available sidebars with `variant` an
 
 `WorkbenchRoot` provides the `Workbench` instance through React context.
 
-Pass the same instance every render. `useWorkbench()` returns exactly what `Shell` was given, and the shell and screens rely on it being stable — it goes in effect dependency lists, and an effect keyed on it re-running is read as "the workbench changed". A wrapper that's new each render (valtio's `useProxy`, for one) breaks that: effects re-run on every render, sidebars lose events between unsubscribe and resubscribe, and unmount cleanups fire mid-screen. Re-render with something that subscribes alongside the instance instead — e.g. `useSnapshot(workbench)` for a valtio proxy — and hand `Shell` the instance itself.
+Create one `Workbench` instance and pass it to `Shell` or `WorkbenchRoot`. `new Workbench()` creates a Valtio proxy; consumers do not need an additional proxy or a shell-wide `useSnapshot()` subscription.
 
-The package does not create its own reactive store. `Workbench` mutates fields directly rather than exposing immutable snapshots, so your app needs some rerender strategy around the shared instance — see [Mutable public state](workbench-api.md#mutable-public-state) for an example.
+`useWorkbench()` uses a Valtio snapshot to track the properties read during rendering. Reading `activeModalId` subscribes to modal changes; reading only `activeScreenId` does not. A component that only calls commands does not subscribe to modal state. Normal React parent renders can still render children.
+
+```tsx
+function ModalLabel() {
+    const workbench = useWorkbench()
+    return <span>{workbench.activeModalId ?? "No modal"}</span>
+}
+
+function OpenSettings() {
+    const workbench = useWorkbench()
+    return <button onClick={() => workbench.openModal("settings")}>Settings</button>
+}
+```
+
+Render reads use a tracked snapshot; event handlers and effects read and mutate the live instance. Keep method calls on the object (`workbench.openModal(id)`) so they retain their receiver. Custom shell components use the same hook and receive the same property-level subscriptions.
+
+The hook returns a new view each render, not the original instance. Do not put that view in effect dependencies: doing so restarts subscriptions and runs cleanup on every render. Depend on the specific values or stable objects the effect uses. For example, the event bus retains its identity:
+
+```tsx
+const { events } = useWorkbench()
+
+useEffect(() => events.listen(MyEvent, onEvent), [events, onEvent])
+```
+
+When migrating, remove consumer-side subscriptions that force the entire shell to render, and replace effects keyed on the hook's returned object with specific dependencies. See [Mutable public state](workbench-api.md#mutable-public-state).
 
 ## Component overrides
 

@@ -4,7 +4,7 @@ import SideBarClose from "../../Events/SideBarClose"
 import SideBarOpen from "../../Events/SideBarOpen"
 import SideBarToggle from "../../Events/SideBarToggle"
 
-import { useWorkbench, useWorkbenchComponents } from "../context"
+import { useWorkbenchComponents, useWorkbench } from "../context"
 
 export type Target = "primary" | "secondary"
 
@@ -20,11 +20,7 @@ export function Sidebar({ target }: Props) {
     const { ToolPane: Pane } = useWorkbenchComponents()
     const tools = workbench.toolsFor(target)
 
-    // Held in state, not read straight off the workbench: `focusedTool` is a
-    // plain field, so a view revealing its own tool (deck stats, say) mutates
-    // it without React hearing about it, and the sidebar would expand showing
-    // whichever tool it last rendered — usually none at all. The sidebar
-    // events below are exactly the moments it changes.
+    // Capture focus with each sidebar event so its content and panel open together.
     const [activeToolId, setActiveToolId] = useState(() => workbench.focusedTool[target])
     const activeTool = activeToolId ? workbench.getTool(activeToolId) : undefined
     const panelRef = usePanelRef()

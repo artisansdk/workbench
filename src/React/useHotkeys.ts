@@ -23,8 +23,6 @@ export function useHotkeys(): void {
         }
 
         return tinykeys(window, bindings)
-        // signature (not hotkeys/workbench) is the real dependency — hotkeys is a
-        // fresh array every render, and rebinding only when the set actually
-        // changes (by id+keys) is the point.
-    }, [signature])
+        // The query returns a fresh array; rebind only when keys or the workbench change.
+    }, [signature, workbench])
 }

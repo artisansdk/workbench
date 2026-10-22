@@ -104,6 +104,8 @@ jobs:
             --dest-dir "$GITHUB_WORKSPACE/site"
 
           echo "$all_versions" | while IFS= read -r version; do
+            # No tags yet: echo still yields one empty line.
+            [ -z "$version" ] && continue
             version_source=$(mktemp -d)
             version_book=$(mktemp -d)
 

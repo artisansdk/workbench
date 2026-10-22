@@ -4,7 +4,7 @@ import SideBarClose from "../../Events/SideBarClose"
 import SideBarOpen from "../../Events/SideBarOpen"
 import SideBarToggle from "../../Events/SideBarToggle"
 
-import { useWorkbench, useWorkbenchComponents } from "../context"
+import { useWorkbenchComponents, useWorkbench } from "../context"
 import type { Target } from "./Sidebar"
 
 /**
@@ -20,8 +20,7 @@ import type { Target } from "./Sidebar"
 export function SidebarSheet({ target }: { target: Target }) {
     const workbench = useWorkbench()
     const { ToolPane: Pane } = useWorkbenchComponents()
-    // Held in state for the same reason as Sidebar: focusedTool is a plain
-    // field, and the sidebar events are the moments it changes.
+    // Capture focus with each sidebar event, including requests to stay beside a screen.
     const [toolId, setToolId] = useState(() => workbench.focusedTool[target])
     const [open, setOpen] = useState(false)
     // Portaled in here rather than <body>, so the sheet keeps the shell's --wb-* variables.

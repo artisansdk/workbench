@@ -11,6 +11,7 @@ React usage expects these peer dependencies to be present:
 - `react`
 - `react-dom`
 - `typescript`
+- `valtio` (v2)
 
 ## Smallest React setup
 
