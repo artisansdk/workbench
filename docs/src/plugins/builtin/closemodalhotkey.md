@@ -6,6 +6,8 @@ Core export:
 import { CloseModalHotkeyPlugin } from "@artisansdk/workbench"
 ```
 
+`ModalHost` closes modals on Escape by itself, going through a modal's guard and playing its exit, so most apps don't need this. It's for binding closing to another key, and it closes outright: no guard, no exit.
+
 Behavior:
 
 - registers a hotkey that calls `workbench.closeModal()`

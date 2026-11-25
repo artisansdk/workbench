@@ -13,7 +13,8 @@ export function ToolPane({ tool, focused }: Props) {
     return (
         <section className="wb-tool-pane" data-focused={focused || undefined} aria-label={tool.label}>
             <header className="wb-tool-pane-header">
-                <span>{tool.label}</span>
+                <span className="wb-tool-pane-title">{tool.label}</span>
+                {tool.actions}
             </header>
             <div className="wb-tool-pane-body">
                 <ToolComponent emit={(event, payload) => workbench.emit(event, payload)} />

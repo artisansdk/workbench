@@ -51,7 +51,7 @@ workbench.activity({
 })
 ```
 
-Top-placement activities render above the spacer in the icon bar. Bottom-placement activities render below it.
+Top-placement activities render above the spacer in the icon bar. Bottom-placement activities render below it. On the mobile shell, top-placement activities go in the bottom nav and bottom-placement ones in the app menu; `onMobile: { placement, order }` places an activity differently there.
 
 ## Tools and placement
 

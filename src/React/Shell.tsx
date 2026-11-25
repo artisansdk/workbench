@@ -1,12 +1,14 @@
-import { type ReactNode, type RefObject, useEffect, useRef, useState } from "react"
+import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react"
 import { Group, Separator } from "react-resizable-panels"
 import type { Workbench } from "../Workbench"
 import { ScreenHeaderSlot } from "./Components/ScreenHeader"
 import { SidebarSheet } from "./Components/SidebarSheet"
 import { useWorkbench, useWorkbenchComponents, WorkbenchRoot } from "./context"
+import type { HeaderTrigger } from "../Types"
 import type { CustomComponents } from "./Types"
 import { useHotkeys } from "./useHotkeys"
 import { LayoutContext, useMediaQuery } from "./useLayout"
+import { HeaderBar } from "./useScrollingHeader"
 
 export type ShellProps = {
     workbench: Workbench
@@ -20,87 +22,51 @@ export type ShellProps = {
     mobile?: boolean
     /** Widths below this (px) get the mobile layout, when both are on. */
     mobileBreakpoint?: number
-    // Mobile only: tuck the header bar away while the screen scrolls down. Worth it on a
-    // phone's short screen; a tablet has the room to keep it.
-    hideHeaderOnScroll?: boolean
 }
 
-type LayoutProps = Pick<ShellProps, "variant" | "sidebars" | "hideHeaderOnScroll"> & { mobile: boolean }
+type LayoutProps = Pick<ShellProps, "variant" | "sidebars"> & { mobile: boolean }
 
 /**
- * How far the screen has to scroll in one direction before the header
- * follows — either way, so a gesture's opening jitter or a bounce at the
- * ends of a list doesn't flick it.
+ * Runs the workbench's header trigger as a hook and reports what it says.
+ * Its own component, keyed by the trigger, so swapping one in starts its
+ * hooks afresh instead of breaking the shell's — and keyed by the screen
+ * too, so every screen starts with the bar showing.
  */
-const HEADER_TOGGLE_DISTANCE = 15
+function HeaderTriggerHost({ trigger, onChange }: { trigger: HeaderTrigger; onChange: (visible: boolean) => void }) {
+    const visible = trigger()
 
-/**
- * Whether the header bar should be tucked away: scrolling the screen down
- * hides it, scrolling back up (or reaching the top) brings it back.
- *
- * Screens scroll their own containers, not the page, and scroll events don't
- * bubble, so this listens on the document in the capture phase and keeps to
- * scrolls inside the screen host — a drawer or modal scrolling is ignored.
- */
-function useHeaderHidden(activeScreenId: string | null, bar: RefObject<HTMLElement | null>, enabled: boolean): boolean {
-    const [hidden, setHidden] = useState(false)
-    // Distance scrolled so far in the current direction: positive down, negative up.
-    const travel = useRef(0)
+    useLayoutEffect(() => onChange(visible), [visible, onChange])
 
-    // A new screen starts with its header showing.
-    useEffect(() => setHidden(false), [activeScreenId])
+    return null
+}
 
-    useEffect(() => {
-        if (!enabled) return
+const triggerKeys = new WeakMap<HeaderTrigger, number>()
+let nextTriggerKey = 0
 
-        const lastTop = new WeakMap<Element, number>()
+function triggerKey(trigger: HeaderTrigger): number {
+    if (!triggerKeys.has(trigger)) triggerKeys.set(trigger, nextTriggerKey++)
 
-        function onScroll(event: Event) {
-            const target = event.target
+    return triggerKeys.get(trigger) as number
+}
 
-            if (!(target instanceof Element) || !target.closest(".wb-screen-host")) return
+/** The element's height in px, kept current as it resizes. */
+function useHeight(element: RefObject<HTMLElement | null>, enabled: boolean): number {
+    const [height, setHeight] = useState(0)
 
-            const top = target.scrollTop
-            const delta = top - (lastTop.get(target) ?? top)
-            lastTop.set(target, top)
+    // Before paint, so the first frame doesn't lay the screen out under the bar.
+    useLayoutEffect(() => {
+        const target = element.current
 
-            if (top <= 0) {
-                travel.current = 0
-                setHidden(false)
-                return
-            }
+        if (!enabled || !target) return
 
-            if (delta === 0) return
+        const observer = new ResizeObserver(() => setHeight(target.offsetHeight))
+        setHeight(target.offsetHeight)
+        observer.observe(target)
 
-            const overflow = target.scrollHeight - target.clientHeight
+        return () => observer.disconnect()
+    }, [element, enabled])
 
-            // An upward move that ends at the very bottom isn't the user: it's
-            // the browser pulling the scroll back in after hiding the header
-            // made the screen taller, or iOS settling a bounce off the end.
-            // A real scroll up leaves the bottom.
-            if (delta < 0 && top >= overflow - 1) {
-                travel.current = 0
-                return
-            }
-
-            // A change of direction starts the count over.
-            travel.current = Math.sign(delta) === Math.sign(travel.current) ? travel.current + delta : delta
-
-            // Only hide if the screen would still scroll without the header.
-            // Otherwise hiding it makes everything fit, the scroll snaps back
-            // to the top, the header returns, and it loops.
-            const headerHeight = bar.current?.offsetHeight ?? 0
-
-            if (travel.current >= HEADER_TOGGLE_DISTANCE && overflow > headerHeight) setHidden(true)
-            else if (travel.current <= -HEADER_TOGGLE_DISTANCE) setHidden(false)
-        }
-
-        document.addEventListener("scroll", onScroll, { capture: true, passive: true })
-
-        return () => document.removeEventListener("scroll", onScroll, { capture: true })
-    }, [bar, enabled])
-
-    return enabled && hidden
+    return height
 }
 
 /**
@@ -108,13 +74,17 @@ function useHeaderHidden(activeScreenId: string | null, bar: RefObject<HTMLEleme
  * being separate trees, so the screen keeps its spot — crossing the breakpoint
  * (a window resized, a tablet turned) doesn't remount whatever is open.
  */
-function Layout({ mobile, variant = "modern", sidebars = 2, hideHeaderOnScroll = true }: LayoutProps) {
+function Layout({ mobile, variant = "modern", sidebars = 2 }: LayoutProps) {
     const workbench = useWorkbench()
     const { AppMenu, BottomNav, IconBar, Sidebar, ScreenHost, ModalHost, DrawerHost, StatusBar, ToastHost } =
         useWorkbenchComponents()
     const [headerSlot, setHeaderSlot] = useState<HTMLDivElement | null>(null)
     const headerBar = useRef<HTMLDivElement>(null)
-    const headerHidden = useHeaderHidden(workbench.activeScreenId, headerBar, mobile && hideHeaderOnScroll)
+    const headerSetting = workbench.headerVisible
+    // What the trigger last said, when the setting is one.
+    const [triggered, setTriggered] = useState(true)
+    const headerVisible = typeof headerSetting === "function" ? triggered : headerSetting
+    const headerHeight = useHeight(headerBar, mobile)
 
     useHotkeys()
 
@@ -150,16 +120,33 @@ function Layout({ mobile, variant = "modern", sidebars = 2, hideHeaderOnScroll =
                 data-layout={mobile ? "mobile" : "desktop"}
                 data-primary-side={mobile ? undefined : workbench.primarySide}
                 data-variant={mobile ? undefined : variant}
+                style={
+                    mobile
+                        ? ({
+                              "--wb-header-height": `${headerHeight}px`,
+                              "--wb-header-offset": headerVisible ? `${headerHeight}px` : "0px",
+                          } as CSSProperties)
+                        : undefined
+                }
             >
                 {mobile ? (
                     // The screen fills the slot through <ScreenHeader>; the menu button is the shell's.
-                    <header className="wb-mobile-header" data-hidden={headerHidden || undefined}>
+                    <header className="wb-mobile-header" data-hidden={!headerVisible || undefined}>
                         <div className="wb-mobile-header-bar" ref={headerBar}>
                             <div className="wb-screen-header" ref={setHeaderSlot} />
                             <div className="wb-mobile-header-menu">
                                 <AppMenu />
                             </div>
                         </div>
+                        {typeof headerSetting === "function" && (
+                            <HeaderBar.Provider value={headerBar}>
+                                <HeaderTriggerHost
+                                    key={`${triggerKey(headerSetting)}:${workbench.activeScreenId}:${workbench.headerResets}`}
+                                    trigger={headerSetting}
+                                    onChange={setTriggered}
+                                />
+                            </HeaderBar.Provider>
+                        )}
                     </header>
                 ) : (
                     workbench.primarySide === "left" && <IconBar />

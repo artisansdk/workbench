@@ -33,7 +33,12 @@ export function Sidebar({ target }: Props) {
     //
     // Unless a tool is already focused here: switching from mobile, the tool
     // that was a sheet button there should be open here.
-    const startOpen = useRef(workbench.focusedTool[target] !== null).current
+    //
+    // That zero is only for the mount: the library also resets to defaultSize on
+    // a double-click of the separator, which would close the sidebar. It changes
+    // once the sidebar has a width, since changing it re-registers the panel,
+    // and a closed one that hasn't moved yet would re-register at the new size.
+    const [defaultSize, setDefaultSize] = useState(workbench.focusedTool[target] !== null ? DEFAULT_SIZE : 0)
 
     /**
      * The width the sidebar was last at while open — every drag, keystroke and
@@ -96,12 +101,15 @@ export function Sidebar({ target }: Props) {
             id={`wb-sidebar-${target}`}
             className={`wb-sidebar wb-sidebar-${target}`}
             aria-label={`${target} sidebar`}
-            defaultSize={startOpen ? DEFAULT_SIZE : 0}
+            defaultSize={defaultSize}
             minSize={MIN_SIZE}
             collapsedSize={0}
             collapsible
             onResize={(size) => {
-                if (size.inPixels > 0) width.current = size.inPixels
+                if (size.inPixels > 0) {
+                    width.current = size.inPixels
+                    setDefaultSize(DEFAULT_SIZE)
+                }
             }}
         >
             {activeTool && <Pane tool={activeTool} focused />}

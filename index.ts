@@ -37,6 +37,7 @@ export type {
     Drawer,
     DrawerProps,
     EffectiveHotkey,
+    HeaderTrigger,
     Hotkey,
     Modal,
     ModalProps,

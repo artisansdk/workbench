@@ -4,7 +4,7 @@ export type Options<T> = {
 }
 
 export default class Contribution<T> {
-    protected contributions = new Map<string, T>()
+    protected contributions = proxyMap<string, T>()
     protected sources = new Map<string, Set<string>>()
     protected readonly type: string
     protected readonly getContributionId: (contribution: T) => string
@@ -55,3 +55,5 @@ export default class Contribution<T> {
         this.sources.get(source)?.add(id)
     }
 }
+import { proxyMap } from "valtio/utils"
+

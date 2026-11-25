@@ -4,8 +4,11 @@ import { act } from "react"
 import { createRoot, type Root } from "react-dom/client"
 import { proxy } from "valtio/vanilla"
 import { Plugin } from "../src/Plugin"
+import CommandPalette from "../src/React/Components/CommandPalette"
+import { IconBarButton } from "../src/React/Components/IconBarButton"
 import { ModalHost } from "../src/React/Components/ModalHost"
 import { useWorkbench, WorkbenchRoot } from "../src/React/context"
+import { useHotkeys } from "../src/React/useHotkeys"
 import { Workbench } from "../src/Workbench"
 
 class Modals extends Plugin {
@@ -134,4 +137,82 @@ test("nested state subscriptions and separate workbenches remain isolated", asyn
     expect(renders.primary).toBeGreaterThan(initial.primary)
     expect(renders.secondary).toBe(initial.secondary)
     expect(renders.other).toBe(initial.other)
+})
+
+test("an activity's button follows its label as it changes", async () => {
+    const workbench = new Workbench().use(new Modals()).boot()
+    const item = { id: "named", label: "Before", icon: null }
+
+    await act(async () => {
+        root.render(
+            <WorkbenchRoot workbench={workbench}>
+                <IconBarButton item={item} active={false} />
+            </WorkbenchRoot>,
+        )
+    })
+
+    const button = () => container.querySelector("button")!
+
+    expect(button().getAttribute("aria-label")).toBe("Before")
+
+    await act(async () => { workbench.setActivityLabel("named", "After") })
+
+    expect(button().getAttribute("aria-label")).toBe("After")
+    expect(button().textContent).toBe("After")
+})
+
+test("mounted contribution readers, palette, and hotkeys follow runtime plugin toggles", async () => {
+    let runs = 0
+    class FeatureEvent {}
+
+    class Feature extends Plugin {
+        readonly id = "feature"
+
+        override register(workbench: Workbench) {
+            workbench.activity({ id: "feature", label: "Feature", icon: null })
+            workbench.tool({ id: "feature", label: "Feature", icon: null, component: () => null })
+            workbench.statusBarItem({ id: "feature", section: "left", component: () => null })
+            workbench.command({ id: "feature", label: "Feature command", run: () => { runs++ } })
+            workbench.hotkey({ id: "feature", keys: "x", run: () => { runs++ } })
+            workbench.event(FeatureEvent)
+        }
+    }
+
+    const workbench = new Workbench().use(new Feature()).boot().disable("feature")
+
+    function Contributions() {
+        const workbench = useWorkbench()
+        useHotkeys()
+        return <>
+            <output data-activities>{workbench.activityItems().length}</output>
+            <output data-tools>{workbench.toolsFor("primary").length}</output>
+            <output data-status>{workbench.statusBarItems("left").length}</output>
+            <output data-events>{workbench.registeredEvents().includes(FeatureEvent) ? 1 : 0}</output>
+        </>
+    }
+
+    await act(async () => root.render(
+        <WorkbenchRoot workbench={workbench}>
+            <Contributions />
+            <CommandPalette close={() => {}} emit={() => {}} guard={() => {}} />
+        </WorkbenchRoot>,
+    ))
+
+    for (const enabled of [false, true, false, true, false]) {
+        await act(async () => {
+            if (enabled) workbench.enable("feature")
+            else workbench.disable("feature")
+        })
+
+        for (const name of ["activities", "tools", "status", "events"]) {
+            expect(container.querySelector(`[data-${name}]`)?.textContent).toBe(enabled ? "1" : "0")
+        }
+        expect(container.querySelector(".wb-command-palette-list")?.textContent ?? "").toBe(enabled ? "Feature command" : "")
+
+        const before = runs
+        await act(async () => {
+            window.dispatchEvent(new window.KeyboardEvent("keydown", { key: "x", code: "KeyX", bubbles: true }))
+        })
+        expect(runs).toBe(before + (enabled ? 1 : 0))
+    }
 })

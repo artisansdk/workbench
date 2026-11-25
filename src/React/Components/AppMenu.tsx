@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { Drawer as VaulDrawer } from "vaul"
 import { useWorkbench, useWorkbenchComponents } from "../context"
-import { isActivityActive } from "./IconBar"
 
 function MenuIcon() {
     return (
@@ -41,10 +40,11 @@ export function AppMenu() {
     const workbench = useWorkbench()
     const { IconBarButton: Button } = useWorkbenchComponents()
     const [open, setOpen] = useState(false)
-    // The drawer portals in here rather than <body>, so it stays inside the
-    // shell and keeps the mobile styles and --wb-* variables scoped to it.
+    // The drawer portals to the shell rather than <body>, so it keeps the
+    // mobile styles and --wb-* variables scoped to it — but not into the
+    // header it sits in, whose z-index would trap it under the bottom nav.
     const [host, setHost] = useState<HTMLDivElement | null>(null)
-    const items = workbench.activityItems().filter((item) => item.placement === "bottom")
+    const items = workbench.activityItems(true).filter((item) => item.placement === "bottom")
 
     if (items.length === 0) {
         return null
@@ -56,7 +56,7 @@ export function AppMenu() {
                 <MenuIcon />
             </button>
             <VaulDrawer.Root direction="right" open={open} onOpenChange={setOpen}>
-                <VaulDrawer.Portal container={host}>
+                <VaulDrawer.Portal container={host?.closest<HTMLElement>(".wb-shell") ?? host}>
                     <VaulDrawer.Overlay className="wb-drawer-overlay wb-app-menu-overlay" />
                     {/* Any click bubbling up from an item closes it — picking one is done with it. */}
                     <VaulDrawer.Content
@@ -72,7 +72,10 @@ export function AppMenu() {
                             <Button
                                 key={item.id}
                                 item={item}
-                                active={isActivityActive(workbench, item)}
+                                // ponytail: never shown active. The menu is for going somewhere, and a
+                                // highlight left over from the last pick just reads as stuck. It also
+                                // means items here never reactivate. Pass the real state if one needs to.
+                                active={false}
                                 tooltip={false}
                             />
                         ))}

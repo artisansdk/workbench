@@ -55,7 +55,7 @@ export function BottomNav() {
     const { IconBarButton: Button } = useWorkbenchComponents()
     const [expanded, setExpanded] = useState(false)
     const [nav, setNav] = useState<HTMLElement | null>(null)
-    const items = workbench.activityItems().filter((item) => (item.placement ?? "top") === "top")
+    const items = workbench.activityItems(true).filter((item) => (item.placement ?? "top") === "top")
     const overflows = items.length > MAX_VISIBLE
     const pinned = overflows ? items.slice(0, MAX_VISIBLE) : items
     const extra = overflows ? items.slice(MAX_VISIBLE) : []

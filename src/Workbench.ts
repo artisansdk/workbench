@@ -1,6 +1,7 @@
 import { createElement, type ReactNode } from "react"
 import hotToast from "react-hot-toast"
 import { proxy, ref } from "valtio"
+import { proxyMap } from "valtio/utils"
 import { createEventBus, type EventBus, type EventClass, type EventIdentifier, type Listener } from "./EventBus"
 import SideBarClose from "./Events/SideBarClose"
 import SideBarOpen from "./Events/SideBarOpen"
@@ -22,6 +23,7 @@ import type {
     Command,
     Drawer,
     EffectiveHotkey,
+    HeaderTrigger,
     Hotkey,
     Modal,
     PluginOrigin,
@@ -62,19 +64,32 @@ export class Workbench {
     protected commandRegistry = new CommandRegistry()
 
     protected plugins = new Map<string, PluginEntry>()
-    protected placement = new Map<string, PlacementEntry>()
+    protected placement = proxyMap<string, PlacementEntry>()
 
     protected currentPluginId: string | null = null
     protected currentOrigin: PluginOrigin | null = null
 
     activeScreenId: string | null = null
+    /** Steps in front of switching away from the active screen; see guardScreen(). */
+    protected screenGuard: ((proceed: () => void) => void) | null = null
     activeModalId: string | null = null
     activeDrawerId: string | null = null
     statusBarVisible = false
+    /** Whether the mobile header bar shows, or what decides it; see header(). */
+    headerVisible: boolean | HeaderTrigger = true
+    /** Bumped by resetHeader(), to start a header trigger over. */
+    headerResets = 0
     focusedTool: Record<SidebarTarget, string | null> = { primary: null, secondary: null }
     primarySide: Side = "left"
     /** How far up (px) notices sit to clear something parked at the bottom of the screen; 0 for nothing. */
     toastInset = 0
+    /**
+     * Labels that have changed since registering, by activity id, layered over
+     * each activity's own: for one named after something live, set with
+     * setActivityLabel().
+     */
+    activityLabels: Record<string, string> = {}
+
     /**
      * The user's keybindings, layered over what plugins registered: a hotkey's
      * id maps to its replacement keys, and `command:<id>` binds keys to a
@@ -280,7 +295,7 @@ export class Workbench {
     activity(item: ActivityItem): this {
         const { id: pluginId, origin } = this.requireCurrentPlugin()
 
-        if ((item.placement ?? "top") === "bottom" && origin !== "first-party") {
+        if (((item.placement ?? "top") === "bottom" || item.onMobile?.placement === "bottom") && origin !== "first-party") {
             throw new Error(
                 `Only first-party plugins may register bottom-placement activity items (attempted by ${pluginId}).`,
             )
@@ -340,6 +355,28 @@ export class Workbench {
 
         entry.toolIds.clear()
         entry.enabled = false
+
+        if (this.activeScreenId && !this.screens.get(this.activeScreenId)) {
+            this.screenGuard = null
+            this.activeScreenId = this.screens.all()[0]?.id ?? null
+        }
+
+        if (this.activeModalId && !this.modals.get(this.activeModalId)) {
+            this.closeModal()
+        }
+
+        if (this.activeDrawerId && !this.drawers.get(this.activeDrawerId)) {
+            this.closeDrawer()
+        }
+
+        for (const target of ["primary", "secondary"] as const) {
+            const toolId = this.focusedTool[target]
+
+            if (toolId && !this.tools.get(toolId)) {
+                this.focusedTool[target] = null
+                this.emit(new SideBarClose({ target }))
+            }
+        }
 
         return this
     }
@@ -487,8 +524,57 @@ export class Workbench {
         return this
     }
 
-    activityItems(): ActivityItem[] {
-        return this.activityRegistry.all()
+    /**
+     * Shows or hides the mobile header bar — or hands the call to a trigger,
+     * consulted as the shell renders (see HeaderTrigger), for a bar that
+     * comes and goes by itself. Shown by default. The bar lies over the
+     * screen, so it hides without moving anything under it.
+     */
+    header(visible: boolean | HeaderTrigger): this {
+        this.headerVisible = visible
+
+        return this
+    }
+
+    showHeader(): this {
+        return this.header(true)
+    }
+
+    hideHeader(): this {
+        return this.header(false)
+    }
+
+    /**
+     * Starts the header trigger over, so the bar shows again — as it does on
+     * its own whenever the active screen changes. For a screen that swaps
+     * what it shows without becoming another screen.
+     */
+    resetHeader(): this {
+        this.headerResets++
+
+        return this
+    }
+
+    setActivityLabel(id: string, label: string): this {
+        this.activityLabels = { ...this.activityLabels, [id]: label }
+
+        return this
+    }
+
+    activityItems(mobile = false): ActivityItem[] {
+        return mobile ? this.activityRegistry.onMobile() : this.activityRegistry.all()
+    }
+
+    /**
+     * While a handler is set, switching to a different screen calls it instead
+     * of switching — e.g. to ask about unsaved work first. It gets `proceed`,
+     * which makes the switch it held up. The screen that set it clears it
+     * (pass null) when it unmounts. Staying on the same screen isn't guarded.
+     */
+    guardScreen(handler: ((proceed: () => void) => void) | null): this {
+        this.screenGuard = handler
+
+        return this
     }
 
     activate(activityItemId: string): this {
@@ -498,29 +584,45 @@ export class Workbench {
             throw new Error(`Unknown activity item: ${activityItemId}`)
         }
 
-        this.apply(item.activates)
+        this.guarded(item.activates, () => {
+            this.apply(item.activates)
 
-        if (item.event) {
-            this.emit(item.event)
-        }
+            if (item.event) {
+                this.emit(item.event)
+            }
+        })
 
         return this
     }
 
     /**
      * Pressing an activity that's already active: its `reactivates` target if
-     * it has one, otherwise the same as activate().
+     * it has one, otherwise the same as activate(). `mobile` prefers its
+     * `reactivatesOnMobile`.
      */
-    reactivate(activityItemId: string): this {
+    reactivate(activityItemId: string, mobile = false): this {
         const item = this.activityRegistry.get(activityItemId)
+        const target = (mobile && item?.reactivatesOnMobile) || item?.reactivates
 
-        if (!item?.reactivates) {
+        if (!target) {
             return this.activate(activityItemId)
         }
 
-        this.apply(item.reactivates)
+        this.guarded(target, () => this.apply(target))
 
         return this
+    }
+
+    /** Runs `go` now, or hands it to the screen guard when it would leave the active screen. */
+    protected guarded(target: ActivityTarget | undefined, go: () => void): void {
+        const leaving = !!target?.screen && target.screen !== this.activeScreenId
+
+        if (leaving && this.screenGuard) {
+            this.screenGuard(go)
+            return
+        }
+
+        go()
     }
 
     protected apply(target: ActivityTarget | undefined): void {
@@ -534,6 +636,17 @@ export class Workbench {
             // A tool riding along with a screen goes beside it; on its own,
             // it's what was asked to see.
             this.emit(new SideBarOpen({ target: sidebar, beside: !!target.screen }))
+        }
+
+        if (target?.toggleTool) {
+            const sidebar = this.placement.get(target.toggleTool)?.sidebar ?? "primary"
+
+            if (this.focusedTool[sidebar] === target.toggleTool) {
+                this.emit(new SideBarToggle({ target: sidebar }))
+            } else {
+                this.focusedTool[sidebar] = target.toggleTool
+                this.emit(new SideBarOpen({ target: sidebar }))
+            }
         }
 
         if (target?.modal) {

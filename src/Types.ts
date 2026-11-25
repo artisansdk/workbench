@@ -5,6 +5,14 @@ export type Side = "left" | "right"
 export type PluginOrigin = "first-party" | "third-party"
 export type StatusBarSection = "left" | "center" | "right"
 
+/**
+ * Decides whether the mobile header bar shows. The shell calls it while it
+ * renders, so it can be a React hook — it may use state and effects to
+ * follow whatever should hide the bar. Keep the same function for as long as
+ * it's in use; passing a different one starts its hooks afresh.
+ */
+export type HeaderTrigger = () => boolean
+
 export type ToolProps = {
     emit: (event: unknown, payload?: unknown) => void
 }
@@ -30,6 +38,8 @@ export type Tool = {
     id: string
     label: string
     icon: ReactNode
+    /** Controls drawn at the end of the tool's header, beside its label — e.g. a "New" button. */
+    actions?: ReactNode
     order?: number
     sidebar?: SidebarTarget
     component: ComponentType<ToolProps>
@@ -93,6 +103,8 @@ export type ActivityTarget = {
     screen?: string
     modal?: string
     drawer?: string
+    /** Opens or closes this tool's sidebar, or brings the tool back if another took the sidebar. */
+    toggleTool?: string
 }
 
 export type ActivityItem = {
@@ -101,6 +113,8 @@ export type ActivityItem = {
     icon: ReactNode
     order?: number
     placement?: "top" | "bottom"
+    /** Where it sits on the mobile shell instead, where "top" is the bottom nav and "bottom" the app menu. */
+    onMobile?: { placement?: "top" | "bottom"; order?: number }
     activates?: ActivityTarget
     /**
      * What pressing it again does while it's already active, e.g. a picker for
@@ -108,6 +122,8 @@ export type ActivityItem = {
      * `activates`. Without it, pressing again just activates again.
      */
     reactivates?: ActivityTarget
+    /** `reactivates` for the mobile shell, where a sidebar would be a sheet covering the screen. */
+    reactivatesOnMobile?: ActivityTarget
     // dispatched via workbench.emit() on click, alongside any `activates` — for
     // behavior activate()'s built-in tool/screen switching doesn't cover (e.g. toggling)
     event?: unknown

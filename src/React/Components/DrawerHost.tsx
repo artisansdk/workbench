@@ -14,7 +14,8 @@ export function DrawerHost() {
     return (
         <VaulDrawer.Root open onOpenChange={(open) => !open && workbench.closeDrawer()}>
             <VaulDrawer.Portal>
-                <VaulDrawer.Overlay className="wb-drawer-overlay" />
+                {/* onClick for the tap vaul misses after a react-aria press; see ModalSheet. */}
+                <VaulDrawer.Overlay className="wb-drawer-overlay" onClick={() => workbench.closeDrawer()} />
                 <VaulDrawer.Content className="wb-drawer" aria-describedby={undefined}>
                     <VaulDrawer.Handle className="wb-drawer-handle" />
                     <VaulDrawer.Title className="wb-drawer-title">{drawer.label}</VaulDrawer.Title>

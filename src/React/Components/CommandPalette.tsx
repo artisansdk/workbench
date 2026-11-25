@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useMemo, useState } from "react"
+import { type KeyboardEvent, useState } from "react"
 import type { ModalProps } from "../../Types"
 import { useWorkbench } from "../context"
 
@@ -20,10 +20,7 @@ export default function CommandPalette({ close }: ModalProps) {
     const [query, setQuery] = useState("")
     const [selected, setSelected] = useState(0)
 
-    const commands = useMemo(
-        () => workbench.commands().filter((command) => matches(command, query)),
-        [workbench, query],
-    )
+    const commands = workbench.commands().filter((command) => matches(command, query))
 
     function run(id: string) {
         // Close the palette before running the command — it's the active modal right

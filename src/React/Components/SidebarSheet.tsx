@@ -63,10 +63,18 @@ export function SidebarSheet({ target }: { target: Target }) {
             {host && (
                 <VaulDrawer.Root open={open} onOpenChange={setOpen}>
                     <VaulDrawer.Portal container={host}>
-                        <VaulDrawer.Overlay className="wb-drawer-overlay wb-modal-sheet-overlay" />
+                        {/* onClick for the tap vaul misses after a react-aria press; see ModalSheet. */}
+                        <VaulDrawer.Overlay
+                            className="wb-drawer-overlay wb-modal-sheet-overlay"
+                            onClick={() => setOpen(false)}
+                        />
                         <VaulDrawer.Content
                             className="wb-drawer wb-modal-sheet wb-sidebar-sheet"
                             aria-describedby={undefined}
+                            // A tap on a modal over the sheet is for the modal, not a tap off the sheet.
+                            onPointerDownOutside={(event) => workbench.activeModalId && event.preventDefault()}
+                            // Likewise Escape, which the modal takes for itself.
+                            onEscapeKeyDown={(event) => workbench.activeModalId && event.preventDefault()}
                         >
                             <VaulDrawer.Handle className="wb-drawer-handle" />
                             <VaulDrawer.Title className="wb-drawer-title">{tool.label}</VaulDrawer.Title>

@@ -45,3 +45,4 @@ export type {
 } from "./Types"
 export { useHotkeys } from "./useHotkeys"
 export { type Layout, useLayout } from "./useLayout"
+export { useScrollingHeader } from "./useScrollingHeader"

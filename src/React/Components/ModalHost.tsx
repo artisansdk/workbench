@@ -28,6 +28,26 @@ function useGuard() {
     return { handler, guarded, guard }
 }
 
+/**
+ * Escape as a dismissal the user starts. On the document, in the bubble phase,
+ * so whatever is open on top goes first: react-aria's popovers and menus stop
+ * the key on its way up, closing themselves and leaving the modal be.
+ */
+function useEscape(dismiss: () => void) {
+    const latest = useRef(dismiss)
+    latest.current = dismiss
+
+    useEffect(() => {
+        function onKeyDown(event: KeyboardEvent) {
+            if (event.key === "Escape" && !event.isComposing) latest.current()
+        }
+
+        document.addEventListener("keydown", onKeyDown)
+
+        return () => document.removeEventListener("keydown", onKeyDown)
+    }, [])
+}
+
 function ModalSheet({ modal }: { modal: Modal }) {
     const workbench = useWorkbench()
     const [open, setOpen] = useState(true)
@@ -35,6 +55,8 @@ function ModalSheet({ modal }: { modal: Modal }) {
     // Portaled in here rather than <body>, so the sheet keeps the shell's --wb-* variables.
     const [host, setHost] = useState<HTMLDivElement | null>(null)
     const ModalComponent = modal.component
+
+    useEscape(() => (handler.current ? handler.current() : setOpen(false)))
 
     // Closing from code (the modal's own close) slides out like a swipe does,
     // then leaves the modal. Timed here: vaul's onAnimationEnd only fires for
@@ -52,11 +74,20 @@ function ModalSheet({ modal }: { modal: Modal }) {
                 // Guarded, vaul's own dismissals are off; tapping off asks the guard instead.
                 <VaulDrawer.Root open={open} onOpenChange={setOpen} dismissible={!guarded}>
                     <VaulDrawer.Portal container={host}>
+                        {/* Closes on its own click as well as vaul's tap-off, which misses the
+                            tap after a react-aria press: the press stops the pointerdown that
+                            Radix resets its "inside the sheet" flag on. */}
                         <VaulDrawer.Overlay
                             className="wb-drawer-overlay wb-modal-sheet-overlay"
-                            onClick={() => handler.current?.()}
+                            onClick={() => (handler.current ? handler.current() : setOpen(false))}
                         />
-                        <VaulDrawer.Content className="wb-drawer wb-modal-sheet" aria-describedby={undefined}>
+                        {/* Radix's own Escape runs in the capture phase, ahead of anything open
+                            on top, and doesn't know about the guard; useEscape has it instead. */}
+                        <VaulDrawer.Content
+                            className="wb-drawer wb-modal-sheet"
+                            aria-describedby={undefined}
+                            onEscapeKeyDown={(event) => event.preventDefault()}
+                        >
                             <VaulDrawer.Handle className="wb-drawer-handle" />
                             <VaulDrawer.Title className="wb-drawer-title">{modal.label ?? modal.id}</VaulDrawer.Title>
                             <ModalComponent
@@ -84,6 +115,8 @@ function FramedModal({ modal }: { modal: Modal }) {
     const ModalComponent = modal.component
     const close = () => setClosing(true)
     const dismiss = () => (handler.current ? handler.current() : close())
+
+    useEscape(dismiss)
 
     function stop(event: ReactMouseEvent) {
         event.stopPropagation()

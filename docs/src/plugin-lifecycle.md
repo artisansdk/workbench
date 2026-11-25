@@ -46,6 +46,8 @@ Disabling a plugin:
 - runs cleanup functions in reverse order
 - unregisters that plugin's tools, screens, modals, activities, events, hotkeys, and commands
 - removes tracked tool placement state
+- closes removed modals, drawers, and focused tool sidebars
+- moves off a removed screen to the first remaining screen (or no screen), clearing its navigation guard
 - marks the plugin as disabled
 
 Re-enabling a plugin reruns both phases:
@@ -54,6 +56,10 @@ Re-enabling a plugin reruns both phases:
 2. `boot()`
 
 This makes plugins effectively restartable. Their own code should be written to tolerate re-entry.
+
+Both methods work while the shell is mounted. Contribution changes update navigation,
+tools, status items, commands, and hotkey bindings without reloading the page. Re-enabling
+does not restore previously open UI unless the plugin's `boot()` opens it.
 
 ## `stop()`
 

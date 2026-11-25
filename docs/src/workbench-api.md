@@ -50,7 +50,7 @@ These are the main read-side APIs consumed by the React shell.
 ### Navigation and overlays
 
 - `activate(activityItemId)`
-- `reactivate(activityItemId)` — what an activity button calls when its activity is already active: the item's `reactivates` target if it has one (e.g. `{ modal: "select-binder" }`), otherwise `activate()`
+- `reactivate(activityItemId, mobile?)` — what an activity button calls when its activity is already active: the item's `reactivates` target if it has one (e.g. `{ toggleTool: "collection-binders" }`), or its `reactivatesOnMobile` first when `mobile` is true (e.g. `{ modal: "select-binder" }`), otherwise `activate()`
 - `openModal(id)`
 - `closeModal()`
 - `openDrawer(id)`

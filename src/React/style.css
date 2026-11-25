@@ -9,6 +9,13 @@
 @import "@raubjo/tooltip/style.css";
 
 .wb-shell {
+    /* No header bar over the screen on desktop. Height is the bar's whole
+       height; offset is how much of it shows right now (0 while hidden), for
+       anything that follows the bar — transition it by --wb-header-slide to
+       move in step. */
+    --wb-header-height: 0px;
+    --wb-header-offset: 0px;
+    --wb-header-slide: 250ms ease-out;
     --wb-icon-bar-width: 48px;
     --wb-classic-icon-bar-width: 200px;
     --wb-border-color: rgba(127, 127, 127, 0.25);
@@ -142,8 +149,13 @@
 .wb-tool-pane-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
     padding: 0.5rem 0.75rem 0.5rem;
+}
+
+/* On the label alone, so a tool's actions beside it aren't dimmed or uppercased. */
+.wb-tool-pane-title {
     font-size: 0.8rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -172,7 +184,8 @@
     justify-content: center;
     padding: 1rem;
     background: var(--wb-modal-backdrop-color);
-    z-index: 1000;
+    /* Over an open sheet (1001), which is still up behind a modal. */
+    z-index: 1002;
     animation: wb-modal-fade var(--wb-modal-enter-duration) var(--wb-modal-ease);
 }
 
@@ -272,6 +285,14 @@
     max-width: 100%;
 }
 
+/* An open sheet is a modal Radix dialog, which sets pointer-events: none on the
+   body so nothing else can be tapped. Menus, popovers and modals opened over it
+   render outside the sheet and would inherit that, letting taps fall through
+   them. Each sheet's overlay already blocks the page behind it. */
+body {
+    pointer-events: auto !important;
+}
+
 .wb-drawer-overlay {
     position: fixed;
     inset: 0;
@@ -294,6 +315,12 @@
     border-radius: var(--wb-sheet-radius, 0.75rem) var(--wb-sheet-radius, 0.75rem) 0 0;
     outline: none;
     background: var(--wb-drawer-bg);
+}
+
+/* Vaul's filler below a sheet, twice its height, for an over-drag. Here it's
+   clipped out of view by the overflow above, and would only add scroll space. */
+.wb-drawer::after {
+    display: none;
 }
 
 /* A modal shown as a sheet (Modal.sheet, mobile shell). Its overlay matches
@@ -433,19 +460,29 @@
     flex-direction: column;
 }
 
-/* Collapses to nothing while hidden, rather than sliding over the screen, so
-   the screen's own scroll position never has to account for it. The top safe
-   area stays padded either way — that's the status bar's, not the header's. */
+/* Only the top safe area takes room — that's the status bar's, not the
+   header's. The bar lies over the screen's top edge, so sliding it out of
+   sight and back never resizes the screen or moves its scroll. Screens pad
+   their tops by --wb-header-height (the bar's height, set by the shell) to
+   start clear of it. */
 .wb-mobile-header {
-    display: grid;
+    position: relative;
+    /* Above the screen it lies over. */
+    z-index: 1;
     flex: 0 0 auto;
-    grid-template-rows: 1fr;
     padding-top: env(safe-area-inset-top);
-    transition: grid-template-rows 250ms ease-out;
 }
 
-.wb-mobile-header[data-hidden] {
-    grid-template-rows: 0fr;
+/* Paints the status bar's strip over the bar as it slides up behind it. */
+.wb-mobile-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 1;
+    height: env(safe-area-inset-top);
+    background: inherit;
 }
 
 /* A grid so the menu button only claims the top-right cell: the screen's
@@ -456,13 +493,17 @@
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.5rem;
-    min-height: 0;
-    overflow: hidden;
     padding: 0.25rem 0.5rem 0.5rem;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    left: 0;
+    background: inherit;
+    transition: transform var(--wb-header-slide);
 }
 
 .wb-mobile-header[data-hidden] .wb-mobile-header-bar {
-    padding-block: 0;
+    transform: translateY(-100%);
 }
 
 /* Lays out nothing itself: its children (the screen's rows) are the grid's items. */
@@ -487,6 +528,12 @@
 .wb-shell[data-layout="mobile"] .wb-panel-group {
     flex: 1 1 auto;
     min-height: 0;
+}
+
+/* For screens that scroll the host itself: focus and scrollIntoView stop
+   clear of the header bar instead of tucking things beneath it. */
+.wb-shell[data-layout="mobile"] .wb-screen-host {
+    scroll-padding-top: var(--wb-header-height);
 }
 
 /* The screen area is the box its fixed-position content measures from, not
@@ -618,7 +665,7 @@
 }
 
 /* Over everything else in the shell, the bottom nav's drawer (1001) included.
-   1002 is left free for an app's toasts to sit between the two. */
+   1002 is for modals, and an app's toasts to sit over them by coming later. */
 .wb-app-menu-overlay {
     z-index: 1003;
 }
