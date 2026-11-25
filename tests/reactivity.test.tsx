@@ -38,7 +38,7 @@ test.each([false, true])("modal updates only render its readers (consumer proxy:
     const instance = new Workbench().use(new Modals()).boot()
     const workbench = wrapped ? proxy(instance) : instance
     const renders = { modal: 0, screen: 0, commands: 0 }
-    let observedModal: string | null = null
+    let observedModal = null as string | null
 
     function CustomModalHost() {
         const workbench = useWorkbench()
